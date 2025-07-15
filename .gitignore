@@ -54,3 +54,8 @@ hs_err_pid*
 
 # Spring Boot
 spring-boot-starter-*
+
+# Other
+.java-version
+.env
+

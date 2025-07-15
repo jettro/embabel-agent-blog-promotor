@@ -1,0 +1,48 @@
+spring:
+  profiles:
+    active: shell,ollama
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      openai:
+        project-id: embabel
+    mcp:
+      client:
+        enabled: true
+        name: embabel
+        version: 1.0.0
+        request-timeout: 30s
+        type: SYNC
+
+        stdio:
+          connections:
+            time:
+              command: docker
+              args:
+                - run
+                - -i
+                - --rm
+                - mcp/time
+                - --local-timezone=America/New_York
+            firecrawl:
+              command: docker
+              args:
+                - run
+                - -i
+                - --rm
+                - -e
+                - FIRECRAWL_API_KEY
+                - mcp/firecrawl
+              env:
+                FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
+embabel:
+  agent-platform:
+    ranking:
+      llm: gpt-4.1-mini
+
+logging:
+  level:
+    com.embabel: INFO
+    com.embabel.agent.api.annotation.support.AgentMetadataReader: INFO
+
+
