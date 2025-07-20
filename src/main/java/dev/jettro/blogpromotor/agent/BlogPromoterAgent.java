@@ -4,6 +4,7 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
+import com.embabel.agent.api.common.PromptRunner;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
@@ -53,7 +54,8 @@ record Post(String content, String originalUrl, String[] hashtags) {
 record BlogPost(String blogPostUrl, String content, String[] imageUrls) {
 }
 
-record PostImage(String imageUrl, String reasonForThisChoice) {}
+record PostImage(String imageUrl, String reasonForThisChoice) {
+}
 
 record ReviewedPost(
         Post post,
@@ -72,27 +74,27 @@ record ReviewedPost(
     @NonNull
     public String getContent() {
         return String.format("""
-            # Social Media Post
-            %s
-            
-            # Original URL
-            %s
-            
-            # Tags
-            %s
-            
-            # Image URL
-            %s
-            
-            # Image Reason
-            %s
-
-            # Review
-            %s
-
-            # Reviewer
-            %s, %s
-            """,
+                        # Social Media Post
+                        %s
+                        
+                        # Original URL
+                        %s
+                        
+                        # Tags
+                        %s
+                        
+                        # Image URL
+                        %s
+                        
+                        # Image Reason
+                        %s
+                        
+                        # Review
+                        %s
+                        
+                        # Reviewer
+                        %s, %s
+                        """,
                 post.content(),
                 post.originalUrl(),
                 String.join(", ", post.hashtags()),
@@ -123,27 +125,25 @@ public class BlogPromoterAgent {
     }
 
     @Action(toolGroups = {"mcp-firecrawl"})
-    BlogPost fetchBlogPost(UserInput userInput, OperationContext context) {
-        return context.promptRunner()
-                .withLlm(
+    BlogPost fetchBlogPost(UserInput userInput) {
+        return PromptRunner.usingLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.EXTRACTOR)
                 .createObject(String.format("""
-                                Fetch the content of the blog post from the URL that is provided by the user.
-                                If the user does not provide a URL or if the URL is not valid, return an error message with the problem.
-                                Provide the content without any boilerplate or additional information.
-                                Extract all the image urls from the page and return them in a list.
-                                
-                                # User input
-                                %s
-                                """, userInput.getContent().trim()), BlogPost.class);
+                        Fetch the content of the blog post from the URL that is provided by the user.
+                        If the user does not provide a URL or if the URL is not valid, return an error message with the problem.
+                        Provide the content without any boilerplate or additional information.
+                        Extract all the image urls from the page and return them in a list.
+                        
+                        # User input
+                        %s
+                        """, userInput.getContent().trim()), BlogPost.class);
     }
 
     @Action
-    Post craftPost(BlogPost blogPost, OperationContext context) {
-        return context.promptRunner()
-                .withLlm(
+    Post craftPost(BlogPost blogPost) {
+        return PromptRunner.usingLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.5) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.WRITER)
@@ -165,9 +165,8 @@ public class BlogPromoterAgent {
     }
 
     @Action
-    PostImage selectBestImage(BlogPost blogPost, OperationContext context) {
-        return context.promptRunner()
-                .withLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
+    PostImage selectBestImage(BlogPost blogPost) {
+        return PromptRunner.usingLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
                 .withPromptContributor(Personas.WRITER)
                 .createObject(String.format("""
                                 Select the best image from the provided list of images.
@@ -190,6 +189,7 @@ public class BlogPromoterAgent {
     @AchievesGoal(description = "The blog post content is fetched, the social post is crafted and reviewed by the Marketing Reviewer.")
     @Action
     ReviewedPost reviewPost(Post post, PostImage postImage, OperationContext context) {
+        // We do not return the end result of the LLM, therefore we need the context to start the runner
         String review = context.promptRunner()
                 .withLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
                 .withPromptContributor(Personas.REVIEWER)
