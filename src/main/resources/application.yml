@@ -1,11 +1,11 @@
 spring:
   profiles:
-    active: shell,ollama
+    active: shell
   ai:
     ollama:
       base-url: http://localhost:11434
-      openai:
-        project-id: embabel
+    openai:
+      project-id: embabel
     mcp:
       client:
         enabled: true
@@ -36,6 +36,9 @@ spring:
               env:
                 FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
 embabel:
+  llm-operations:
+    data-binding:
+      maxAttempts: 2
   agent-platform:
     ranking:
       llm: gpt-4.1-mini
@@ -44,5 +47,6 @@ logging:
   level:
     com.embabel: INFO
     com.embabel.agent.api.annotation.support.AgentMetadataReader: INFO
+    dev.jettro.blogpromotor: DEBUG
 
 

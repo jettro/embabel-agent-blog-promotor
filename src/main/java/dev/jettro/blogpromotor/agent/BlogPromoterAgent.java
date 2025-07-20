@@ -12,6 +12,8 @@ import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
 import com.embabel.common.ai.prompt.PromptContributionLocation;
 import com.embabel.common.core.types.Timestamped;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.lang.NonNull;
@@ -57,11 +59,12 @@ record BlogPost(String blogPostUrl, String content, String[] imageUrls) {
 record PostImage(String imageUrl, String reasonForThisChoice) {
 }
 
-record ReviewedPost(
-        Post post,
-        PostImage postImage,
-        String review,
-        Persona reviewer
+record ReviewedPost(Post post, String review, Persona reviewer) {
+}
+
+record SocialMediaPost(
+        ReviewedPost post,
+        PostImage postImage
 ) implements HasContent, Timestamped {
 
     @Override
@@ -95,13 +98,13 @@ record ReviewedPost(
                         # Reviewer
                         %s, %s
                         """,
-                post.content(),
-                post.originalUrl(),
-                String.join(", ", post.hashtags()),
+                post.post().content(),
+                post.post().originalUrl(),
+                String.join(", ", post.post().hashtags()),
                 postImage.imageUrl(),
                 postImage.reasonForThisChoice(),
-                review,
-                reviewer.getName(),
+                post.review(),
+                post.reviewer().getName(),
                 getTimestamp().atZone(ZoneId.systemDefault())
                         .format(DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy"))
         ).trim();
@@ -109,10 +112,13 @@ record ReviewedPost(
 }
 
 
-@Agent(description = "Fetch content from a blog post, generate a post for socials about the blog post, select the best image from the page, review it for engagement.",
+@Agent(description = "Fetch content from a blog post, generate a post for socials about the blog post, select the " +
+        "best image from the page, review it for engagement.",
         name = "Promote on socials Agent")
 @Profile("!test")
 public class BlogPromoterAgent {
+    private static final Logger logger = LoggerFactory.getLogger(BlogPromoterAgent.class);
+
     private final int postWordCount;
     private final int reviewWordCount;
 
@@ -122,6 +128,8 @@ public class BlogPromoterAgent {
     ) {
         this.postWordCount = postWordCount;
         this.reviewWordCount = reviewWordCount;
+        logger.info("BlogPromoterAgent initialized with postWordCount: {}, reviewWordCount: {}",
+                postWordCount, reviewWordCount);
     }
 
     @Action(toolGroups = {"mcp-firecrawl"})
@@ -166,6 +174,13 @@ public class BlogPromoterAgent {
 
     @Action
     PostImage selectBestImage(BlogPost blogPost) {
+        if (blogPost.imageUrls() == null || blogPost.imageUrls().length == 0) {
+            logger.warn("No images found in the blog post: {}", blogPost.blogPostUrl());
+            return new PostImage(
+                    "No image available",
+                    "No images were found in the blog post."
+            );
+        }
         return PromptRunner.usingLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
                 .withPromptContributor(Personas.WRITER)
                 .createObject(String.format("""
@@ -183,13 +198,10 @@ public class BlogPromoterAgent {
                         blogPost.content(),
                         String.join(", ", blogPost.imageUrls())
                 ).trim(), PostImage.class);
-
     }
 
-    @AchievesGoal(description = "The blog post content is fetched, the social post is crafted and reviewed by the Marketing Reviewer.")
     @Action
-    ReviewedPost reviewPost(Post post, PostImage postImage, OperationContext context) {
-        // We do not return the end result of the LLM, therefore we need the context to start the runner
+    ReviewedPost reviewPost(Post post, OperationContext context) {
         String review = context.promptRunner()
                 .withLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
                 .withPromptContributor(Personas.REVIEWER)
@@ -209,12 +221,20 @@ public class BlogPromoterAgent {
                         post.originalUrl(),
                         post.content()
                 ).trim());
-
         return new ReviewedPost(
                 post,
-                postImage,
                 review,
                 Personas.REVIEWER
+        );
+    }
+
+    @AchievesGoal(description = "Given a blog URL, generate a social media post and route it to the Marketing " +
+            "Reviewer for approval.")
+    @Action
+    SocialMediaPost constructSocialMediaPost(ReviewedPost post, PostImage postImage) {
+        return new SocialMediaPost(
+                post,
+                postImage
         );
     }
 }

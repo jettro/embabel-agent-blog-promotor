@@ -60,14 +60,10 @@ public class BlogPromoterAgentTest {
                 "This is a crafted social post about Java.",
                 "https://example.com/blog",
                 new String[]{"Java", "Spring", "Boot"});
-        var postImage = new PostImage(
-                "https://example.com/image1.png",
-                "Relevant to the blog content."
-        );
         var context = new FakeOperationContext();
         context.expectResponse("This is a review of the post.");
 
-        ReviewedPost reviewedPost = agent.reviewPost(post, postImage, context);
+        ReviewedPost reviewedPost = agent.reviewPost(post, context);
 
         assertEquals("This is a review of the post.", reviewedPost.review(), "Expected review to match the mocked response");
 
@@ -82,5 +78,28 @@ public class BlogPromoterAgentTest {
         assertTrue(llmCall.getPrompt().contains("https://example.com/blog"), "Prompt should include the original URL");
     }
 
+    @Test
+    public void testConstructSocialMediaPost() {
+        var agent = new BlogPromoterAgent(100, 100);
+
+        var post = new Post(
+                "This is a crafted social post about Java.",
+                "https://example.com/blog",
+                new String[]{"Java", "Spring", "Boot"});
+
+        var reviewedPost = new ReviewedPost(
+                post,
+                "This post is engaging and suitable for LinkedIn.",
+                Personas.REVIEWER
+        );
+        var postImage = new PostImage(
+                "https://example.com/image1.png",
+                "A relevant image for the post."
+        );
+        var socialMediaPost = agent.constructSocialMediaPost(reviewedPost, postImage);
+        assertNotNull(socialMediaPost, "SocialMediaPost should not be null");
+        assertEquals(reviewedPost, socialMediaPost.post(), "ReviewedPost should match");
+        assertEquals(postImage, socialMediaPost.postImage(), "PostImage should match");
+    }
 
 }
