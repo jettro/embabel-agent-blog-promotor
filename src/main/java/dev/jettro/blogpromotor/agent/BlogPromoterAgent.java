@@ -123,7 +123,7 @@ public class BlogPromoterAgent {
     private final int reviewWordCount;
 
     BlogPromoterAgent(
-            @Value("${postWordCount:100}") int postWordCount,
+            @Value("${postWordCount:200}") int postWordCount,
             @Value("${reviewWordCount:100}") int reviewWordCount
     ) {
         this.postWordCount = postWordCount;
@@ -228,8 +228,9 @@ public class BlogPromoterAgent {
         );
     }
 
-    @AchievesGoal(description = "Given a blog URL, generate a social media post and route it to the Marketing " +
-            "Reviewer for approval.")
+    @AchievesGoal(
+            description = "Given a blog URL, generate a social media post and route it to the Marketing Reviewer for approval.",
+            examples = {"Generate a social media post for this blog: https://example.com/blog-post"})
     @Action
     SocialMediaPost constructSocialMediaPost(ReviewedPost post, PostImage postImage) {
         return new SocialMediaPost(

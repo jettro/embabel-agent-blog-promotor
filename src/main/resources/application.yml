@@ -36,6 +36,8 @@ spring:
               env:
                 FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
 embabel:
+  models:
+    defaultLlm: gpt-4.1
   llm-operations:
     data-binding:
       maxAttempts: 2
