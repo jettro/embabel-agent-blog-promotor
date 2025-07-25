@@ -83,6 +83,10 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
             <id>embabel-snapshots</id>
             <url>https://repo.embabel.com/artifactory/libs-snapshot</url>
             <snapshots>
@@ -90,5 +94,12 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+    </pluginRepositories>
 
 </project>
