@@ -4,13 +4,11 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
-import com.embabel.agent.api.common.PromptRunner;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
 import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
-import com.embabel.common.ai.prompt.PromptContributionLocation;
 import com.embabel.common.core.types.Timestamped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,25 +25,19 @@ abstract class Personas {
             "Blog Extractor",
             "A diligent researcher who extracts the essence of blog posts with precision",
             "Concise",
-            "Extract the main content of a blog post from a URL without any boilerplate or additional information.",
-            "",
-            PromptContributionLocation.BEGINNING
+            "Extract the main content of a blog post from a URL without any boilerplate or additional information."
     );
     static final Persona WRITER = Persona.create(
             "Blog Promoter",
             "A marketing expert who loves to create engaging content for social media",
             "Formal",
-            "Create short introduction for social media of a blog post that is engaging to readers.",
-            "",
-            PromptContributionLocation.BEGINNING
+            "Create short introduction for social media of a blog post that is engaging to readers."
     );
     static final Persona REVIEWER = Persona.create(
             "Marketing Reviewer",
             "Social Media Marketing Expert",
             "Professional and insightful",
-            "Help guide social media posts toward good engagement",
-            "",
-            PromptContributionLocation.BEGINNING
+            "Help guide social media posts toward good engagement"
     );
 }
 
@@ -133,8 +125,8 @@ public class BlogPromoterAgent {
     }
 
     @Action(toolGroups = {"mcp-firecrawl"})
-    BlogPost fetchBlogPost(UserInput userInput) {
-        return PromptRunner.usingLlm(
+    BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
+        return operationContext.ai().withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.EXTRACTOR)
@@ -150,8 +142,8 @@ public class BlogPromoterAgent {
     }
 
     @Action
-    Post craftPost(BlogPost blogPost) {
-        return PromptRunner.usingLlm(
+    Post craftPost(BlogPost blogPost, OperationContext operationContext) {
+        return operationContext.ai().withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.5) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.WRITER)
@@ -173,7 +165,7 @@ public class BlogPromoterAgent {
     }
 
     @Action
-    PostImage selectBestImage(BlogPost blogPost) {
+    PostImage selectBestImage(BlogPost blogPost, OperationContext operationContext) {
         if (blogPost.imageUrls() == null || blogPost.imageUrls().length == 0) {
             logger.warn("No images found in the blog post: {}", blogPost.blogPostUrl());
             return new PostImage(
@@ -181,7 +173,7 @@ public class BlogPromoterAgent {
                     "No images were found in the blog post."
             );
         }
-        return PromptRunner.usingLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
+        return operationContext.ai().withLlm(LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE))
                 .withPromptContributor(Personas.WRITER)
                 .createObject(String.format("""
                                 Select the best image from the provided list of images.
