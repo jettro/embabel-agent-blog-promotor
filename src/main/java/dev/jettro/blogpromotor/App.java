@@ -1,6 +1,5 @@
 package dev.jettro.blogpromotor;
 
-import com.embabel.agent.config.annotation.EnableAgentShell;
 import com.embabel.agent.config.annotation.EnableAgents;
 import com.embabel.agent.config.annotation.LoggingThemes;
 import com.embabel.agent.config.annotation.McpServers;
@@ -11,7 +10,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Main application class for the Agent Blog Promoter
  */
 @SpringBootApplication
-@EnableAgentShell
 @EnableAgents(loggingTheme = LoggingThemes.STAR_WARS, mcpServers = McpServers.DOCKER)
 public class App {
     public static void main(String[] args) {

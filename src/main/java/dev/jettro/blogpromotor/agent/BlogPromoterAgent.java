@@ -21,19 +21,19 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 abstract class Personas {
-    static final Persona EXTRACTOR = Persona.create(
+    static final Persona EXTRACTOR = new Persona(
             "Blog Extractor",
             "A diligent researcher who extracts the essence of blog posts with precision",
             "Concise",
             "Extract the main content of a blog post from a URL without any boilerplate or additional information."
     );
-    static final Persona WRITER = Persona.create(
+    static final Persona WRITER = new Persona(
             "Blog Promoter",
             "A marketing expert who loves to create engaging content for social media",
             "Formal",
             "Create short introduction for social media of a blog post that is engaging to readers."
     );
-    static final Persona REVIEWER = Persona.create(
+    static final Persona REVIEWER = new Persona(
             "Marketing Reviewer",
             "Social Media Marketing Expert",
             "Professional and insightful",

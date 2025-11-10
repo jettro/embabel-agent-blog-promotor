@@ -87,3 +87,47 @@ Contributions are welcome! Please open issues or submit pull requests for improv
 ## License
 
 This project is licensed under the MIT License.
+
+## Migrate from 0.1.1 to 0.1.4
+
+### Dependency Changes
+There are changes in the maven dependencies. Embabel now has more starters to include only what is needed. One improvement is related to the inclusion of Ollama dependencies. Another is in projects where the shell is not needed, you can just omit the dependency. One example to do this is when exposing the agent as an MCP server.
+
+You can remove the @EnableAgentShell annotation from your main class. If you want to keep the shell, you can just add the new dependency.
+
+```xml
+<dependency>
+    <groupId>com.embabel.agent</groupId>
+    <artifactId>embabel-agent-starter-shell</artifactId>
+    <version>${embabel-agent.version}</version>
+</dependency>
+```
+
+### Persona Class Changes
+The persona class was changed. The create method is removed, you can now use the public constructor.
+
+Before:
+
+```java
+Persona.create(...)
+```
+
+After:
+
+```java
+new Persona(...)
+```
+
+### Unit test changes
+In unit testing, you want to check the content of the prompt. The getPrompt method was removed. You can now get the prompt from the tool directly.
+
+Before:
+
+```java
+persona.getPrompt();
+```
+After:
+
+```java
+promptRunner.getLlmInvocations().getFirst().getMessages().getFirst().getContent();
+```

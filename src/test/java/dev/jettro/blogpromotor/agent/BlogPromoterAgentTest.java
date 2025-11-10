@@ -31,7 +31,7 @@ public class BlogPromoterAgentTest {
         );
 
         // Then
-        String prompt = promptRunner.getLlmInvocations().getFirst().getPrompt();
+        String prompt = promptRunner.getLlmInvocations().getFirst().getMessages().getFirst().getContent();
         assertTrue(prompt.contains("https://jettro.dev"), "Expected prompt to contain the url 'https://jettro.dev'");
     }
 
@@ -54,7 +54,7 @@ public class BlogPromoterAgentTest {
         agent.craftPost(blogPost, context);
 
         // Then
-        String prompt = promptRunner.getLlmInvocations().getFirst().getPrompt();
+        String prompt = promptRunner.getLlmInvocations().getFirst().getMessages().getFirst().getContent();
         assertTrue(prompt.contains("Craft a short social post"), "Prompt should instruct crafting a social post");
         assertTrue(prompt.contains("https://example.com/blog"), "Prompt should include the blog post URL");
         assertTrue(prompt.contains("blog post content"), "Prompt should include blog post content section");
@@ -77,7 +77,7 @@ public class BlogPromoterAgentTest {
         agent.selectBestImage(blogPost, context);
 
         // Then
-        String prompt = promptRunner.getLlmInvocations().getFirst().getPrompt();
+        String prompt = promptRunner.getLlmInvocations().getFirst().getMessages().getFirst().getContent();
         assertTrue(prompt.contains("Select the best image"), "Prompt should instruct to select the best image");
         assertTrue(prompt.contains("This is a test blog post content"), "Prompt should include blog post content");
         assertTrue(prompt.contains("image1.png"), "Prompt should include the first image URL");
@@ -101,12 +101,12 @@ public class BlogPromoterAgentTest {
         List<LlmInvocation> llmInvocations = context.getLlmInvocations();
         assertFalse(llmInvocations.isEmpty(), "Expected at least one LLM invocation for review");
 
-        LlmInvocation llmCall = llmInvocations.getFirst();
+        String promptContent = llmInvocations.getFirst().getMessages().getFirst().getContent();
 
-        assertTrue(llmCall.getPrompt().contains("review"), "Prompt should instruct to review the post");
-        assertTrue(llmCall.getPrompt().contains("LinkedIn"), "Prompt should mention the platform");
-        assertTrue(llmCall.getPrompt().contains("This is a crafted social post about Java."), "Prompt should include the social post content");
-        assertTrue(llmCall.getPrompt().contains("https://example.com/blog"), "Prompt should include the original URL");
+        assertTrue(promptContent.contains("review"), "Prompt should instruct to review the post");
+        assertTrue(promptContent.contains("LinkedIn"), "Prompt should mention the platform");
+        assertTrue(promptContent.contains("This is a crafted social post about Java."), "Prompt should include the social post content");
+        assertTrue(promptContent.contains("https://example.com/blog"), "Prompt should include the original URL");
     }
 
     @Test

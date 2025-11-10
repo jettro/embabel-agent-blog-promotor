@@ -1,9 +1,5 @@
 spring:
-  profiles:
-    active: shell
   ai:
-    ollama:
-      base-url: http://localhost:11434
     openai:
       project-id: embabel
     mcp:
