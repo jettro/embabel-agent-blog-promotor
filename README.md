@@ -88,6 +88,12 @@ Contributions are welcome! Please open issues or submit pull requests for improv
 
 This project is licensed under the MIT License.
 
+
+# Migration notes
+
+## Migrate from 0.1.4 to 0.2.0
+The most important change is that artifacts are now available in maven central. No need for other repositories.
+
 ## Migrate from 0.1.1 to 0.1.4
 
 ### Dependency Changes
