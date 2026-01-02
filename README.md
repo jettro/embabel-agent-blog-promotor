@@ -91,6 +91,10 @@ This project is licensed under the MIT License.
 
 # Migration notes
 
+## Migrate from 0.2.0 to 0.3.1
+- Persona instances are now created using the **Persona.create(..)** method. This replaces the old way via **new Persona(..)**.
+- Package name for utility classes to make testing easier changed from com.embabel.agent.**testing**.unit to com.embabel.agent.**test**.unit
+
 ## Migrate from 0.1.4 to 0.2.0
 The most important change is that artifacts are now available in maven central. No need for other repositories.
 

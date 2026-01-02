@@ -1,9 +1,9 @@
 package dev.jettro.blogpromotor.agent;
 
 import com.embabel.agent.domain.io.UserInput;
-import com.embabel.agent.testing.unit.FakeOperationContext;
-import com.embabel.agent.testing.unit.FakePromptRunner;
-import com.embabel.agent.testing.unit.LlmInvocation;
+import com.embabel.agent.test.unit.FakeOperationContext;
+import com.embabel.agent.test.unit.FakePromptRunner;
+import com.embabel.agent.test.unit.LlmInvocation;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
