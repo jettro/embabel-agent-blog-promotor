@@ -40,6 +40,9 @@ embabel:
   agent-platform:
     ranking:
       llm: gpt-4.1-mini
+  agent:
+    logging:
+      personality: starwars
 
 logging:
   level:

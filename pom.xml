@@ -24,7 +24,7 @@
     <dependencies>
         <dependency>
             <groupId>com.embabel.agent</groupId>
-            <artifactId>embabel-agent-starter</artifactId>
+            <artifactId>embabel-agent-starter-shell</artifactId>
             <version>${embabel-agent.version}</version>
         </dependency>
 
@@ -34,24 +34,12 @@
             <version>${embabel-agent.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.embabel.agent</groupId>
-            <artifactId>embabel-agent-starter-shell</artifactId>
-            <version>${embabel-agent.version}</version>
-        </dependency>
-
         <!-- Dependencies for testing -->
         <dependency>
             <groupId>com.embabel.agent</groupId>
             <artifactId>embabel-agent-test</artifactId>
             <version>${embabel-agent.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <!-- Prevent a cve -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
         </dependency>
 
         <dependency>
