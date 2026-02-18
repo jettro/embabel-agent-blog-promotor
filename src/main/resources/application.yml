@@ -32,22 +32,22 @@ spring:
               env:
                 FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
 embabel:
-  models:
-    defaultLlm: gpt-4.1
-  llm-operations:
-    data-binding:
-      maxAttempts: 2
-  agent-platform:
-    ranking:
-      llm: gpt-4.1-mini
   agent:
     logging:
       personality: starwars
+    platform:
+      llm-operations:
+        data-binding:
+          max-attempts: 2
+      ranking:
+        llm: gpt-4.1-mini
+  models:
+    default-llm: gpt-4.1
 
 logging:
   level:
-    com.embabel: INFO
-    com.embabel.agent.api.annotation.support.AgentMetadataReader: INFO
+    com.embabel: DEBUG
+    com.embabel.agent.api.annotation.support.AgentMetadataReader: DEBUG
     dev.jettro.blogpromotor: DEBUG
 
 

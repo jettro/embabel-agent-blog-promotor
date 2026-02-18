@@ -21,19 +21,19 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 abstract class Personas {
-    static final Persona EXTRACTOR = Persona.create (
+    static final Persona EXTRACTOR = new Persona (
             "Blog Extractor",
             "A diligent researcher who extracts the essence of blog posts with precision",
             "Concise",
             "Extract the main content of a blog post from a URL without any boilerplate or additional information."
     );
-    static final Persona WRITER = Persona.create(
+    static final Persona WRITER = new Persona (
             "Blog Promoter",
             "A marketing expert who loves to create engaging content for social media",
             "Formal",
             "Create short introduction for social media of a blog post that is engaging to readers."
     );
-    static final Persona REVIEWER = Persona.create(
+    static final Persona REVIEWER = new Persona (
             "Marketing Reviewer",
             "Social Media Marketing Expert",
             "Professional and insightful",
@@ -124,12 +124,14 @@ public class BlogPromoterAgent {
                 postWordCount, reviewWordCount);
     }
 
-    @Action(toolGroups = {"mcp-firecrawl"})
+    @Action
     BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
-        return operationContext.ai().withLlm(
+        return operationContext.ai()
+                .withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.EXTRACTOR)
+                .withToolGroup("mcp-firecrawl")
                 .createObject(String.format("""
                         Fetch the content of the blog post from the URL that is provided by the user.
                         If the user does not provide a URL or if the URL is not valid, return an error message with the problem.

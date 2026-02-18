@@ -17,23 +17,30 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <embabel-agent.version>0.3.1</embabel-agent.version>
-        <spring-boot.version>3.5.7</spring-boot.version>
+        <embabel-agent.version>0.3.4</embabel-agent.version>
+        <spring-boot.version>3.5.9</spring-boot.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.embabel.agent</groupId>
             <artifactId>embabel-agent-starter-shell</artifactId>
-            <version>${embabel-agent.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.embabel.agent</groupId>
             <artifactId>embabel-agent-starter-openai</artifactId>
-            <version>${embabel-agent.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.embabel.agent</groupId>
+            <artifactId>embabel-agent-netty-client-autoconfigure</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+        </dependency>
         <!-- Dependencies for testing -->
         <dependency>
             <groupId>com.embabel.agent</groupId>
@@ -58,11 +65,22 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-
+            <dependency>
+                <groupId>com.embabel.agent</groupId>
+                <artifactId>embabel-agent-dependencies</artifactId>
+                <version>${embabel-agent.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.assertj</groupId>
+                <artifactId>assertj-core</artifactId>
+                <version>3.27.7</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.19.0</version>
+                <version>3.20.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
