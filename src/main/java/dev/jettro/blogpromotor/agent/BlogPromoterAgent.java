@@ -4,12 +4,14 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
+import com.embabel.agent.api.tool.callback.*;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
 import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
 import com.embabel.common.core.types.Timestamped;
+import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -113,24 +115,31 @@ public class BlogPromoterAgent {
 
     private final int postWordCount;
     private final int reviewWordCount;
+    private final PresidioAnalyzerClient piiAnalyzerClient;
 
     BlogPromoterAgent(
             @Value("${postWordCount:200}") int postWordCount,
-            @Value("${reviewWordCount:100}") int reviewWordCount
+            @Value("${reviewWordCount:100}") int reviewWordCount,
+            PresidioAnalyzerClient piiAnalyzerClient
     ) {
         this.postWordCount = postWordCount;
         this.reviewWordCount = reviewWordCount;
+        this.piiAnalyzerClient = piiAnalyzerClient;
         logger.info("BlogPromoterAgent initialized with postWordCount: {}, reviewWordCount: {}",
                 postWordCount, reviewWordCount);
     }
 
     @Action
     BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
+
+        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient);
+
         return operationContext.ai()
                 .withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.EXTRACTOR)
+                .withToolLoopTransformers(transformer)
                 .withToolGroup("mcp-firecrawl")
                 .createObject(String.format("""
                         Fetch the content of the blog post from the URL that is provided by the user.

@@ -23,7 +23,7 @@ public class BlogPromoterAgentTest {
                 "This is a blog post about Java and Spring Boot.",
                 new String[]{"https://jettro.dev/image1.png", "https://jettro.dev/image2.png"})
         );
-        var agent = new BlogPromoterAgent(200, 400);
+        var agent = new BlogPromoterAgent(200, 400, null);
 
         // When
         agent.fetchBlogPost(
@@ -48,7 +48,7 @@ public class BlogPromoterAgentTest {
                 "This is a test blog post content about Java and Spring Boot.",
                 new String[]{"https://example.com/image1.png", "https://example.com/image2.png"}
         );
-        var agent = new BlogPromoterAgent(100, 100);
+        var agent = new BlogPromoterAgent(100, 100, null);
 
         // When
         agent.craftPost(blogPost, context);
@@ -66,7 +66,7 @@ public class BlogPromoterAgentTest {
         var context = FakeOperationContext.create();
         context.expectResponse(new PostImage("https://example.com/image1.png", "Most relevant image"));
         var promptRunner = (FakePromptRunner) context.promptRunner();
-        var agent = new BlogPromoterAgent(100, 100);
+        var agent = new BlogPromoterAgent(100, 100, null);
         var blogPost = new BlogPost(
                 "https://example.com/blog",
                 "This is a test blog post content about Java and Spring Boot.",
@@ -86,7 +86,7 @@ public class BlogPromoterAgentTest {
 
     @Test
     public void testReviewPost() {
-        var agent = new BlogPromoterAgent(100, 50);
+        var agent = new BlogPromoterAgent(100, 50, null);
         var post = new Post(
                 "This is a crafted social post about Java.",
                 "https://example.com/blog",
@@ -111,7 +111,7 @@ public class BlogPromoterAgentTest {
 
     @Test
     public void testConstructSocialMediaPost() {
-        var agent = new BlogPromoterAgent(100, 100);
+        var agent = new BlogPromoterAgent(100, 100, null);
 
         var post = new Post(
                 "This is a crafted social post about Java.",
