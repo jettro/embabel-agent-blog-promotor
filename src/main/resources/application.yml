@@ -31,6 +31,10 @@ spring:
                 - mcp/firecrawl
               env:
                 FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
+presidio:
+  analyzer:
+    base-url: http://localhost:5002
+
 embabel:
   agent:
     logging:
