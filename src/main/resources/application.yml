@@ -34,6 +34,7 @@ spring:
 presidio:
   analyzer:
     base-url: http://localhost:5002
+    pii-types: ["PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD_NUMBER"]
 
 embabel:
   agent:

@@ -4,14 +4,15 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
-import com.embabel.agent.api.tool.callback.*;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
 import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
 import com.embabel.common.core.types.Timestamped;
+import dev.jettro.blogpromotor.presidio.PIIToolLoopTransformer;
 import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
+import dev.jettro.blogpromotor.presidio.PresidioProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -116,15 +117,18 @@ public class BlogPromoterAgent {
     private final int postWordCount;
     private final int reviewWordCount;
     private final PresidioAnalyzerClient piiAnalyzerClient;
-
+    private final PresidioProperties presidioProperties;
+    
     BlogPromoterAgent(
             @Value("${postWordCount:200}") int postWordCount,
             @Value("${reviewWordCount:100}") int reviewWordCount,
-            PresidioAnalyzerClient piiAnalyzerClient
+            PresidioAnalyzerClient piiAnalyzerClient,
+            PresidioProperties presidioProperties
     ) {
         this.postWordCount = postWordCount;
         this.reviewWordCount = reviewWordCount;
         this.piiAnalyzerClient = piiAnalyzerClient;
+        this.presidioProperties = presidioProperties;
         logger.info("BlogPromoterAgent initialized with postWordCount: {}, reviewWordCount: {}",
                 postWordCount, reviewWordCount);
     }
@@ -132,7 +136,7 @@ public class BlogPromoterAgent {
     @Action
     BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
 
-        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient);
+        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes());
 
         return operationContext.ai()
                 .withLlm(
