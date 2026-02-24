@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -25,14 +24,14 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
     @NotNull
     @Override
     public List<Message> transformBeforeLlmCall(@NotNull BeforeLlmCallContext context) {
-        var history = new ArrayList<>(context.getHistory());
+        var history = context.getHistory();
         logger.info("Before llm call size: {}", history.size());
 
-        if (history.isEmpty()) {
+        // Find the last message in the conversation and check it it is a user message
+        var lastMessage = history.getLast();
+        if (history.isEmpty() || !(lastMessage instanceof UserMessage)) {
             return history;
         }
-
-        var lastMessage = history.getLast();
 
         logger.info("Last message: {}", lastMessage.getContent());
         var request = AnalyzeRequest.builder()
@@ -52,12 +51,14 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
                 .sorted(Comparator.comparingInt(AnalyzeResult::start).reversed())
                 .toList();
 
+        // Replace PII entities with placeholders in the form of <ENTITY_TYPE>
         var text = lastMessage.getContent();
         StringBuilder sb = new StringBuilder(text);
         for (var result : sortedResults) {
             sb.replace(result.start(), result.end(), "<" + result.entityType() + ">");
         }
 
+        // Replace the message in the history with the transformed one
         Message transformedMessage = new UserMessage(sb.toString(), lastMessage.getRole().getDisplayName(),
                 lastMessage.getTimestamp());
         history.set(history.size() - 1, transformedMessage);
