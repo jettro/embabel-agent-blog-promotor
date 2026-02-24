@@ -1,11 +1,8 @@
-package dev.jettro.blogpromotor.agent;
+package dev.jettro.blogpromotor.presidio;
 
 import com.embabel.agent.api.tool.callback.*;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
-import dev.jettro.blogpromotor.presidio.AnalyzeRequest;
-import dev.jettro.blogpromotor.presidio.AnalyzeResult;
-import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +15,11 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
     private static final Logger logger = LoggerFactory.getLogger(PIIToolLoopTransformer.class);
 
     private final PresidioAnalyzerClient presidioAnalyzerClient;
+    private final List<String> piiTypes;
 
-    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient) {
+    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes) {
         this.presidioAnalyzerClient = presidioAnalyzerClient;
+        this.piiTypes = piiTypes;
     }
 
     @NotNull
@@ -34,8 +33,15 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
         }
 
         var lastMessage = history.getLast();
+
         logger.info("Last message: {}", lastMessage.getContent());
-        var analyzeResult = presidioAnalyzerClient.analyze(new AnalyzeRequest(lastMessage.getContent(), "en"));
+        var request = AnalyzeRequest.builder()
+                .text(lastMessage.getContent())
+                .language("en")
+                .entities(piiTypes)
+                .build();
+
+        var analyzeResult = presidioAnalyzerClient.analyze(request);
 
         if (analyzeResult == null || analyzeResult.isEmpty()) {
             return history;
