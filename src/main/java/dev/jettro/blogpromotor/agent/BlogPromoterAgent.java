@@ -4,15 +4,22 @@ import com.embabel.agent.api.annotation.AchievesGoal;
 import com.embabel.agent.api.annotation.Action;
 import com.embabel.agent.api.annotation.Agent;
 import com.embabel.agent.api.common.OperationContext;
+import com.embabel.agent.api.common.StuckHandler;
+import com.embabel.agent.api.common.StuckHandlerResult;
+import com.embabel.agent.api.common.StuckHandlingResultCode;
+import com.embabel.agent.core.AgentProcess;
+import com.embabel.agent.core.Blackboard;
 import com.embabel.agent.domain.io.UserInput;
 import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
 import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
+import com.embabel.common.core.thinking.ThinkingResponse;
 import com.embabel.common.core.types.Timestamped;
 import dev.jettro.blogpromotor.presidio.PIIToolLoopTransformer;
 import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import dev.jettro.blogpromotor.presidio.PresidioProperties;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,19 +31,19 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 abstract class Personas {
-    static final Persona EXTRACTOR = new Persona (
+    static final Persona EXTRACTOR = new Persona(
             "Blog Extractor",
             "A diligent researcher who extracts the essence of blog posts with precision",
             "Concise",
             "Extract the main content of a blog post from a URL without any boilerplate or additional information."
     );
-    static final Persona WRITER = new Persona (
+    static final Persona WRITER = new Persona(
             "Blog Promoter",
             "A marketing expert who loves to create engaging content for social media",
             "Formal",
             "Create short introduction for social media of a blog post that is engaging to readers."
     );
-    static final Persona REVIEWER = new Persona (
+    static final Persona REVIEWER = new Persona(
             "Marketing Reviewer",
             "Social Media Marketing Expert",
             "Professional and insightful",
@@ -111,14 +118,14 @@ record SocialMediaPost(
         "best image from the page, review it for engagement.",
         name = "Promote on socials Agent")
 @Profile("!test")
-public class BlogPromoterAgent {
+public class BlogPromoterAgent implements StuckHandler {
     private static final Logger logger = LoggerFactory.getLogger(BlogPromoterAgent.class);
 
     private final int postWordCount;
     private final int reviewWordCount;
     private final PresidioAnalyzerClient piiAnalyzerClient;
     private final PresidioProperties presidioProperties;
-    
+
     BlogPromoterAgent(
             @Value("${postWordCount:200}") int postWordCount,
             @Value("${reviewWordCount:100}") int reviewWordCount,
@@ -136,13 +143,23 @@ public class BlogPromoterAgent {
     @Action
     BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
 
-        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes());
+        AgentProcess agentProcess = AgentProcess.get();
+        if (agentProcess != null) {
+            Blackboard blackboard = agentProcess.getBlackboard();
+            blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
+        } else {
+            logger.error("AgentProcess is null");
+        }
+
+        logger.info("HELP: Action thread: {}", Thread.currentThread().getName());
+        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes(), AgentProcess.get().getBlackboard());
 
         return operationContext.ai()
                 .withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
                 ).withPromptContributor(Personas.EXTRACTOR)
+                .withGuardRails(new PIIUserInputGuardRail(piiAnalyzerClient, presidioProperties.piiTypes()))
                 .withToolLoopTransformers(transformer)
                 .withToolGroup("mcp-firecrawl")
                 .createObject(String.format("""
@@ -154,6 +171,38 @@ public class BlogPromoterAgent {
                         # User input
                         %s
                         """, userInput.getContent().trim()), BlogPost.class);
+
+
+//        var runner = operationContext.ai()
+//                .withLlm(
+//                        LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
+//                                .withTemperature(0.2) // Higher temperature for more creative output
+//                ).withPromptContributor(Personas.EXTRACTOR)
+//                .withGuardRails(new PIIUserInputGuardRail(piiAnalyzerClient, presidioProperties.piiTypes()))
+//                .withToolLoopTransformers(transformer)
+//                .withToolGroup("mcp-firecrawl");
+//        ThinkingResponse<BlogPost> runnerResponse = runner
+//                .thinking()
+//                .createObjectIfPossible(String.format("""
+//                        Fetch the content of the blog post from the URL that is provided by the user.
+//                        If the user does not provide a URL or if the URL is not valid, return an error message with
+//                        the problem.
+//                        Provide the content without any boilerplate or additional information.
+//                        Extract all the image urls from the page and return them in a list.
+//
+//                        # User input
+//                        %s
+//                        """, userInput.getContent().trim()), BlogPost.class);
+//        if (runnerResponse.hasResult()) {
+//            logger.info("Successfully fetched blog post content");
+//            return runnerResponse.getResult();
+//        } else if (runnerResponse.getException() != null) {
+//            logger.error("Error fetching blog post content: {}", runnerResponse.getException().getMessage());
+//            return null;
+//        } else {
+//            logger.info("Object creation not possible. Thinking blocks: {}", runnerResponse.getThinkingBlocks());
+//            return null;
+//        }
     }
 
     @Action
@@ -236,13 +285,26 @@ public class BlogPromoterAgent {
     }
 
     @AchievesGoal(
-            description = "Given a blog URL, generate a social media post and route it to the Marketing Reviewer for approval.",
+            description = "Given a blog URL, generate a social media post and route it to the Marketing Reviewer for " +
+                    "approval.",
             examples = {"Generate a social media post for this blog: https://example.com/blog-post"})
     @Action
     SocialMediaPost constructSocialMediaPost(ReviewedPost post, PostImage postImage) {
         return new SocialMediaPost(
                 post,
                 postImage
+        );
+    }
+
+    @NotNull
+    @Override
+    public StuckHandlerResult handleStuck(@NotNull AgentProcess agentProcess) {
+        logger.info("Agent stuck. Stopping execution.");
+        return new StuckHandlerResult(
+                "Unsticking myself",
+                this,
+                StuckHandlingResultCode.NO_RESOLUTION,
+                agentProcess
         );
     }
 }
