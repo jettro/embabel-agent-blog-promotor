@@ -2,6 +2,7 @@ package dev.jettro.blogpromotor.presidio;
 
 import com.embabel.agent.api.tool.callback.AfterLlmCallContext;
 import com.embabel.agent.api.tool.callback.BeforeLlmCallContext;
+import com.embabel.agent.core.Blackboard;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,12 +31,15 @@ class PIIToolLoopTransformerTest {
     @Mock
     private AfterLlmCallContext afterLlmCallContext;
 
+    @Mock
+    private Blackboard blackboard;
+
     private PIIToolLoopTransformer transformer;
     private final List<String> piiTypes = List.of("PERSON", "EMAIL_ADDRESS");
 
     @BeforeEach
     void setUp() {
-        transformer = new PIIToolLoopTransformer(presidioAnalyzerClient, piiTypes);
+        transformer = new PIIToolLoopTransformer(presidioAnalyzerClient, piiTypes, blackboard);
     }
 
     @Test
@@ -64,7 +68,7 @@ class PIIToolLoopTransformerTest {
     void transformBeforeLlmCall_withPII_masksContent() {
         String originalText = "My email is john.doe@example.com and my name is John Doe.";
         Message message = new UserMessage(originalText, "User", Instant.now());
-        when(beforeLlmCallContext.getHistory()).thenReturn(List.of(message));
+        when(beforeLlmCallContext.getHistory()).thenReturn(new java.util.ArrayList<>(List.of(message)));
 
         // Note: PIIToolLoopTransformer sorts results by start index descending to avoid shifting issues.
         // John Doe. (start 48, end 56)

@@ -1,6 +1,8 @@
 package dev.jettro.blogpromotor.presidio;
 
 import com.embabel.agent.api.tool.callback.*;
+import com.embabel.agent.core.AgentProcess;
+import com.embabel.agent.core.Blackboard;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
 import org.jetbrains.annotations.NotNull;
@@ -15,21 +17,48 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
 
     private final PresidioAnalyzerClient presidioAnalyzerClient;
     private final List<String> piiTypes;
+    private final Blackboard blackboard;
 
-    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes) {
+    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes, Blackboard blackboard) {
         this.presidioAnalyzerClient = presidioAnalyzerClient;
         this.piiTypes = piiTypes;
+        this.blackboard = blackboard;
+
+        logger.info("PIIToolLoopTransformer initialized with piiTypes: {}", piiTypes);
     }
 
     @NotNull
     @Override
     public List<Message> transformBeforeLlmCall(@NotNull BeforeLlmCallContext context) {
+        logger.info("HELP: Transformer thread: {}", Thread.currentThread().getName());
+        logger.info("Transforming before llm call");
+        logger.info("There is a Thread local for the agent process: {}", AgentProcess.get() != null);
+        AgentProcess agentProcess = AgentProcess.get();
+        if (agentProcess != null) {
+            Blackboard blackboard = agentProcess.getBlackboard();
+            blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
+        } else {
+            logger.error("AgentProcess is null");
+            this.blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
+
+            Object piiAnalyzeResult = this.blackboard.get("pii_analyze_result");
+            
+            if (piiAnalyzeResult != null && List.class.isAssignableFrom(piiAnalyzeResult.getClass())) {
+                logger.info("PII analyze result is a list");
+                List<AnalyzeResult> analyzeResultList = (List<AnalyzeResult>) piiAnalyzeResult;
+                analyzeResultList.forEach(result -> logger.info("Entity: {}, Start: {}, End: {}", result.entityType(), result.start(), result.end()));
+            }
+        }
+
         var history = context.getHistory();
         logger.info("Before llm call size: {}", history.size());
 
         // Find the last message in the conversation and check it it is a user message
+        if (history.isEmpty()) {
+            return history;
+        }
         var lastMessage = history.getLast();
-        if (history.isEmpty() || !(lastMessage instanceof UserMessage)) {
+        if (!(lastMessage instanceof UserMessage)) {
             return history;
         }
 

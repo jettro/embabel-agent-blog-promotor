@@ -51,8 +51,8 @@ embabel:
 
 logging:
   level:
-    com.embabel: DEBUG
-    com.embabel.agent.api.annotation.support.AgentMetadataReader: DEBUG
+    com.embabel: INFO
+    com.embabel.agent.api.annotation.support.AgentMetadataReader: INFO
     dev.jettro.blogpromotor: DEBUG
 
 
