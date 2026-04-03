@@ -43,6 +43,18 @@ embabel:
         llm: gpt-4.1-mini
   models:
     default-llm: gpt-4.1
+  observability:
+    enabled: true
+    service-name: my-agent-app
+
+management:
+  langfuse:
+    enabled: true
+    endpoint: ${LANGFUSE_BASE_URL:}/api/public/otel
+    public-key: ${LANGFUSE_PUBLIC_KEY}
+    secret-key: ${LANGFUSE_SECRET_KEY}
+    embabel-only: false
+
 
 logging:
   level:
