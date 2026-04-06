@@ -150,8 +150,7 @@ public class BlogPromoterAgent implements StuckHandler {
         }
 
         logger.info("HELP: Action thread: {}", Thread.currentThread().getName());
-//        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes(), AgentProcess.get().getBlackboard());
-        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes());
+        var transformer = new PIIToolLoopTransformer();
 
         return operationContext.ai()
                 .withLlm(
@@ -170,38 +169,6 @@ public class BlogPromoterAgent implements StuckHandler {
                         # User input
                         %s
                         """, userInput.getContent().trim()), BlogPost.class);
-
-
-//        var runner = operationContext.ai()
-//                .withLlm(
-//                        LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
-//                                .withTemperature(0.2) // Higher temperature for more creative output
-//                ).withPromptContributor(Personas.EXTRACTOR)
-//                .withGuardRails(new PIIUserInputGuardRail(piiAnalyzerClient, presidioProperties.piiTypes()))
-//                .withToolLoopTransformers(transformer)
-//                .withToolGroup("mcp-firecrawl");
-//        ThinkingResponse<BlogPost> runnerResponse = runner
-//                .thinking()
-//                .createObjectIfPossible(String.format("""
-//                        Fetch the content of the blog post from the URL that is provided by the user.
-//                        If the user does not provide a URL or if the URL is not valid, return an error message with
-//                        the problem.
-//                        Provide the content without any boilerplate or additional information.
-//                        Extract all the image urls from the page and return them in a list.
-//
-//                        # User input
-//                        %s
-//                        """, userInput.getContent().trim()), BlogPost.class);
-//        if (runnerResponse.hasResult()) {
-//            logger.info("Successfully fetched blog post content");
-//            return runnerResponse.getResult();
-//        } else if (runnerResponse.getException() != null) {
-//            logger.error("Error fetching blog post content: {}", runnerResponse.getException().getMessage());
-//            return null;
-//        } else {
-//            logger.info("Object creation not possible. Thinking blocks: {}", runnerResponse.getThinkingBlocks());
-//            return null;
-//        }
     }
 
     @Action

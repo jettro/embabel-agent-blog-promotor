@@ -9,6 +9,7 @@ Agent Blog Promotor is a Java 21 Maven project that automates the process of pro
 - **Image Selection:** Uses AI to select the most relevant image from the blog post.
 - **Content Review:** Reviews and refines posts for engagement and professionalism.
 - **Extensible Personas:** Modular agent personas for extraction, writing, and reviewing.
+- **PII Obfuscation:** Protects PII from being exposed in social media posts.
 
 ## Technologies Used
 
@@ -17,11 +18,13 @@ Agent Blog Promotor is a Java 21 Maven project that automates the process of pro
 - Spring (for configuration and profiles)
 - Custom agent and persona framework (Embabel)
 - JUnit 5 for testing
+- Microsoft Presidio for Obfuscation in the PII Guardrail
 
 ## Prerequisites
 
 - Java 21 or higher
 - Maven 3.6 or higher
+- Docker for running Presidio (Optional)
 
 ## Building the Project
 
@@ -40,6 +43,15 @@ mvn test
 ```bash
 mvn exec:java -Dexec.mainClass="dev.jettro.blogpromotor.App"
 ```
+
+In case you want to enable the PII Guardrail, you need to run the docker container first.
+
+```bash
+docker pull mcr.microsoft.com/presidio-analyzer
+docker run -d -p 5002:3000 mcr.microsoft.com/presidio-analyzer:latest
+```
+
+Find more information about the PII Guardrail [here](https://microsoft.github.io/presidio/getting_started/getting_started_text/).
 
 ## Agent Workflow
 

@@ -5,9 +5,7 @@ import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.core.Blackboard;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
-import dev.jettro.blogpromotor.presidio.AnalyzeRequest;
 import dev.jettro.blogpromotor.presidio.AnalyzeResult;
-import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,22 +16,24 @@ import java.util.Optional;
 
 import static dev.jettro.blogpromotor.agent.PIIUserInputGuardRail.PII_ANALYZE_RESULT_KEY;
 
+/**
+ * <p>This class transforms the user input by replacing PII entities with placeholders. It uses the output from the
+ * PIIUserInputGuardRail to replace the PII entities with placeholders. The found PII entities are read from the
+ * blackboard.</p>
+ * <p>In a future version, this class can be extended to replace the placeholders with the actual PII entities when the
+ * assistant is returning a result from the LLM.</p>
+ */
 public class PIIToolLoopTransformer implements ToolLoopTransformer {
     private static final Logger logger = LoggerFactory.getLogger(PIIToolLoopTransformer.class);
 
-    private final PresidioAnalyzerClient presidioAnalyzerClient;
-    private final List<String> piiTypes;
-
-    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes) {
-        this.presidioAnalyzerClient = presidioAnalyzerClient;
-        this.piiTypes = piiTypes;
-
-        logger.info("PIIToolLoopTransformer initialized with piiTypes: {}", piiTypes);
+    public PIIToolLoopTransformer() {
     }
 
     @NotNull
     @Override
     public List<Message> transformBeforeLlmCall(@NotNull BeforeLlmCallContext context) {
+        logger.info("Before llm is called, the blackboard is checked for PII entities.");
+        // Read the PII analyze result from the blackboard, if none is found, return the original history
         AgentProcess agentProcess = AgentProcess.get();
         if (agentProcess == null) {
             logger.error("AgentProcess is null, this is unexpected.");
@@ -47,10 +47,9 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
         }
         var piiAnalyzeResult = optionalPiiAnalyzeResult.get();
 
-        var history = context.getHistory();
-        logger.info("Before llm call size: {}", history.size());
 
-        // Find the last message in the conversation and check if it is a user message
+        // Find the last message in the conversation and only continue if it is a user message
+        var history = context.getHistory();
         if (history.isEmpty() || !(history.getLast() instanceof UserMessage)) {
             return history;
         }
@@ -58,17 +57,24 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
 
         // Replace PII entities with placeholders in the form of <ENTITY_TYPE>
         var text = lastMessage.getContent();
-        StringBuilder sb = new StringBuilder(text);
-        for (var result : piiAnalyzeResult) {
-            sb.replace(result.start(), result.end(), "<" + result.entityType() + ">");
+        StringBuilder piiTransformedStringBuilder = new StringBuilder(text);
+
+        // Sort results by start index descending to avoid shifting issues when replacing text
+        var sortedPiiAnalyzeResult = piiAnalyzeResult.stream()
+                .sorted(Comparator.comparingInt(AnalyzeResult::start).reversed())
+                .toList();
+
+        for (var result : sortedPiiAnalyzeResult) {
+            piiTransformedStringBuilder.replace(result.start(), result.end(), "<" + result.entityType() + ">");
         }
 
         // Replace the message in the history with the transformed one
-        Message transformedMessage = new UserMessage(sb.toString(), lastMessage.getRole().getDisplayName(),
+        Message transformedMessage = new UserMessage(piiTransformedStringBuilder.toString(),
+                lastMessage.getRole().getDisplayName(),
                 lastMessage.getTimestamp());
         history.set(history.size() - 1, transformedMessage);
 
-        logger.info("After transformation: {}", transformedMessage.getContent());
+        logger.info("After PII transformation: {}", transformedMessage.getContent());
 
         return history;
     }

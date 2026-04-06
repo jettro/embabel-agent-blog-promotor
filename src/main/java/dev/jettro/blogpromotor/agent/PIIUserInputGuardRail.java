@@ -13,6 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+/**
+ * This class implements a user input guard rail that checks for PII (Personally Identifiable Information) in user input.
+ * It uses the Presidio Analyzer API to analyze the input and identify PII entities. If PII is found, it returns a validation
+ * error with a level of severity of WARNING, indicating that the input contains sensitive information.
+ */
 public class PIIUserInputGuardRail implements UserInputGuardRail {
     private static final Logger logger = LoggerFactory.getLogger(PIIUserInputGuardRail.class);
     public static final String PII_ANALYZE_RESULT_KEY = "pii_analyze_result";
