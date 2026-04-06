@@ -1,4 +1,10 @@
 spring:
+  application:
+    name: embabel-agent-app
+  profiles:
+    active:
+      - default
+#      - tracing
   ai:
     openai:
       project-id: embabel
@@ -44,22 +50,34 @@ embabel:
   models:
     default-llm: gpt-4.1
   observability:
-    enabled: true
+    enabled: false
     service-name: my-agent-app
 
 management:
   langfuse:
-    enabled: true
+    enabled: false
     endpoint: ${LANGFUSE_BASE_URL:}/api/public/otel
     public-key: ${LANGFUSE_PUBLIC_KEY}
     secret-key: ${LANGFUSE_SECRET_KEY}
     embabel-only: false
 
-
 logging:
   level:
-    com.embabel: DEBUG
-    com.embabel.agent.api.annotation.support.AgentMetadataReader: DEBUG
+    com.embabel: INFO
     dev.jettro.blogpromotor: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: tracing
+
+embabel:
+  observability:
+    enabled: true
+
+management:
+  langfuse:
+    enabled: true
 
 

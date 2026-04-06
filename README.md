@@ -91,6 +91,9 @@ This project is licensed under the MIT License.
 
 # Migration notes
 
+## Migrate to 0.3.5
+- The sample includes a profile to enable observability through OpenTelemetry and Langfuse.
+
 ## Migrate from 0.2.0 to 0.3.1
 - Persona instances are now created using the **Persona.create(..)** method. This replaces the old way via **new Persona(..)**.
 - Package name for utility classes to make testing easier changed from com.embabel.agent.**testing**.unit to com.embabel.agent.**test**.unit

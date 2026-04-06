@@ -48,7 +48,6 @@
             <version>${embabel-agent.version}</version>
         </dependency>
 
-        <!-- Source: https://mvnrepository.com/artifact/com.quantpulsar/opentelemetry-exporter-langfuse -->
         <dependency>
             <groupId>com.quantpulsar</groupId>
             <artifactId>opentelemetry-exporter-langfuse</artifactId>
