@@ -14,9 +14,7 @@ import com.embabel.agent.domain.library.HasContent;
 import com.embabel.agent.prompt.persona.Persona;
 import com.embabel.common.ai.model.AutoModelSelectionCriteria;
 import com.embabel.common.ai.model.LlmOptions;
-import com.embabel.common.core.thinking.ThinkingResponse;
 import com.embabel.common.core.types.Timestamped;
-import dev.jettro.blogpromotor.presidio.PIIToolLoopTransformer;
 import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import dev.jettro.blogpromotor.presidio.PresidioProperties;
 import org.jetbrains.annotations.NotNull;
@@ -152,7 +150,8 @@ public class BlogPromoterAgent implements StuckHandler {
         }
 
         logger.info("HELP: Action thread: {}", Thread.currentThread().getName());
-        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes(), AgentProcess.get().getBlackboard());
+//        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes(), AgentProcess.get().getBlackboard());
+        var transformer = new PIIToolLoopTransformer(piiAnalyzerClient, presidioProperties.piiTypes());
 
         return operationContext.ai()
                 .withLlm(

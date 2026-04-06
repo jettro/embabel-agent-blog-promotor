@@ -1,28 +1,32 @@
-package dev.jettro.blogpromotor.presidio;
+package dev.jettro.blogpromotor.agent;
 
 import com.embabel.agent.api.tool.callback.*;
 import com.embabel.agent.core.AgentProcess;
 import com.embabel.agent.core.Blackboard;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
+import dev.jettro.blogpromotor.presidio.AnalyzeRequest;
+import dev.jettro.blogpromotor.presidio.AnalyzeResult;
+import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+
+import static dev.jettro.blogpromotor.agent.PIIUserInputGuardRail.PII_ANALYZE_RESULT_KEY;
 
 public class PIIToolLoopTransformer implements ToolLoopTransformer {
     private static final Logger logger = LoggerFactory.getLogger(PIIToolLoopTransformer.class);
 
     private final PresidioAnalyzerClient presidioAnalyzerClient;
     private final List<String> piiTypes;
-    private final Blackboard blackboard;
 
-    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes, Blackboard blackboard) {
+    public PIIToolLoopTransformer(PresidioAnalyzerClient presidioAnalyzerClient, List<String> piiTypes) {
         this.presidioAnalyzerClient = presidioAnalyzerClient;
         this.piiTypes = piiTypes;
-        this.blackboard = blackboard;
 
         logger.info("PIIToolLoopTransformer initialized with piiTypes: {}", piiTypes);
     }
@@ -30,60 +34,32 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
     @NotNull
     @Override
     public List<Message> transformBeforeLlmCall(@NotNull BeforeLlmCallContext context) {
-        logger.info("HELP: Transformer thread: {}", Thread.currentThread().getName());
-        logger.info("Transforming before llm call");
-        logger.info("There is a Thread local for the agent process: {}", AgentProcess.get() != null);
         AgentProcess agentProcess = AgentProcess.get();
-        if (agentProcess != null) {
-            Blackboard blackboard = agentProcess.getBlackboard();
-            blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
-        } else {
-            logger.error("AgentProcess is null");
-            this.blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
-
-            Object piiAnalyzeResult = this.blackboard.get("pii_analyze_result");
-            
-            if (piiAnalyzeResult != null && List.class.isAssignableFrom(piiAnalyzeResult.getClass())) {
-                logger.info("PII analyze result is a list");
-                List<AnalyzeResult> analyzeResultList = (List<AnalyzeResult>) piiAnalyzeResult;
-                analyzeResultList.forEach(result -> logger.info("Entity: {}, Start: {}, End: {}", result.entityType(), result.start(), result.end()));
-            }
+        if (agentProcess == null) {
+            logger.error("AgentProcess is null, this is unexpected.");
+            throw new RuntimeException("There is no reference to the agent process");
         }
+        Blackboard blackboard = agentProcess.getBlackboard();
+
+        Optional<List<AnalyzeResult>> optionalPiiAnalyzeResult = getPiiAnalyzeResult(blackboard);
+        if (optionalPiiAnalyzeResult.isEmpty()) {
+            return context.getHistory();
+        }
+        var piiAnalyzeResult = optionalPiiAnalyzeResult.get();
 
         var history = context.getHistory();
         logger.info("Before llm call size: {}", history.size());
 
-        // Find the last message in the conversation and check it it is a user message
-        if (history.isEmpty()) {
+        // Find the last message in the conversation and check if it is a user message
+        if (history.isEmpty() || !(history.getLast() instanceof UserMessage)) {
             return history;
         }
         var lastMessage = history.getLast();
-        if (!(lastMessage instanceof UserMessage)) {
-            return history;
-        }
-
-        logger.info("Last message: {}", lastMessage.getContent());
-        var request = AnalyzeRequest.builder()
-                .text(lastMessage.getContent())
-                .language("en")
-                .entities(piiTypes)
-                .build();
-
-        var analyzeResult = presidioAnalyzerClient.analyze(request);
-
-        if (analyzeResult == null || analyzeResult.isEmpty()) {
-            return history;
-        }
-
-        // Sort results in descending order by start index to avoid shifting issues during replacement
-        var sortedResults = analyzeResult.stream()
-                .sorted(Comparator.comparingInt(AnalyzeResult::start).reversed())
-                .toList();
 
         // Replace PII entities with placeholders in the form of <ENTITY_TYPE>
         var text = lastMessage.getContent();
         StringBuilder sb = new StringBuilder(text);
-        for (var result : sortedResults) {
+        for (var result : piiAnalyzeResult) {
             sb.replace(result.start(), result.end(), "<" + result.entityType() + ">");
         }
 
@@ -115,5 +91,30 @@ public class PIIToolLoopTransformer implements ToolLoopTransformer {
     @Override
     public List<Message> transformAfterIteration(@NotNull AfterIterationContext context) {
         return ToolLoopTransformer.super.transformAfterIteration(context);
+    }
+
+    private Optional<List<AnalyzeResult>> getPiiAnalyzeResult(Blackboard blackboard) {
+        Object piiAnalyzeResult = blackboard.get(PII_ANALYZE_RESULT_KEY);
+        // Use pattern matching, for instanceof to safely cast and check for null
+        if (!(piiAnalyzeResult instanceof List<?> rawList)) {
+            logger.info("No PII analyze result found or it is not a list.");
+            return Optional.empty();
+        }
+        // Ensure the list contains the expected types (optional but recommended for safety)
+        List<AnalyzeResult> analyzeResultList = rawList.stream()
+                .filter(AnalyzeResult.class::isInstance)
+                .map(AnalyzeResult.class::cast)
+                .toList();
+
+        if (analyzeResultList.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Log the found PII entities
+        analyzeResultList.forEach(result ->
+                logger.info("Entity: {}, Start: {}, End: {}", result.entityType(), result.start(), result.end())
+        );
+
+        return Optional.of(analyzeResultList);
     }
 }

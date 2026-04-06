@@ -15,6 +15,7 @@ import java.util.List;
 
 public class PIIUserInputGuardRail implements UserInputGuardRail {
     private static final Logger logger = LoggerFactory.getLogger(PIIUserInputGuardRail.class);
+    public static final String PII_ANALYZE_RESULT_KEY = "pii_analyze_result";
 
     private final PresidioAnalyzerClient presidioAnalyzerClient;
     private final List<String> piiTypes;
@@ -50,7 +51,7 @@ public class PIIUserInputGuardRail implements UserInputGuardRail {
 
         var analyzeResult = presidioAnalyzerClient.analyze(request);
 
-        blackboard.set("pii_analyze_result", analyzeResult);
+        blackboard.set(PII_ANALYZE_RESULT_KEY, analyzeResult);
 
         if (analyzeResult.isEmpty()) {
             return new ValidationResult(true, List.of());

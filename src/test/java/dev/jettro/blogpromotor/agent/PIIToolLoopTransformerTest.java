@@ -1,10 +1,13 @@
-package dev.jettro.blogpromotor.presidio;
+package dev.jettro.blogpromotor.agent;
 
 import com.embabel.agent.api.tool.callback.AfterLlmCallContext;
 import com.embabel.agent.api.tool.callback.BeforeLlmCallContext;
 import com.embabel.agent.core.Blackboard;
 import com.embabel.chat.Message;
 import com.embabel.chat.UserMessage;
+import dev.jettro.blogpromotor.presidio.AnalyzeRequest;
+import dev.jettro.blogpromotor.presidio.AnalyzeResult;
+import dev.jettro.blogpromotor.presidio.PresidioAnalyzerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +42,9 @@ class PIIToolLoopTransformerTest {
 
     @BeforeEach
     void setUp() {
-        transformer = new PIIToolLoopTransformer(presidioAnalyzerClient, piiTypes, blackboard);
+//        transformer = new PIIToolLoopTransformer(presidioAnalyzerClient, piiTypes, blackboard);
+        // TODO: This will break, need to think about this.
+        transformer = new PIIToolLoopTransformer(presidioAnalyzerClient, piiTypes);
     }
 
     @Test
