@@ -12,8 +12,9 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 public class PresidioConfig {
 
     @Bean
-    public PresidioAnalyzerClient presidioAnalyzerClient(PresidioProperties properties) {
-        RestClient restClient = RestClient.builder()
+    public PresidioAnalyzerClient presidioAnalyzerClient(PresidioProperties properties,
+                                                         RestClient.Builder restClientBuilder) {
+        RestClient restClient = restClientBuilder
                 .baseUrl(properties.baseUrl())
                 .build();
         RestClientAdapter adapter = RestClientAdapter.create(restClient);

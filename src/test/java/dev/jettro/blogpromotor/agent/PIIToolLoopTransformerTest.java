@@ -75,7 +75,7 @@ class PIIToolLoopTransformerTest {
         List<Message> result = transformer.transformBeforeLlmCall(beforeLlmCallContext);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getContent()).isEqualTo("Hello, world!");
+        assertThat(result.getFirst().getContent()).isEqualTo("Hello, world!");
     }
 
     @Test
