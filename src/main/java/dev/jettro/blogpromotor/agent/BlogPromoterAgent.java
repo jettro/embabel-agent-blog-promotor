@@ -141,14 +141,6 @@ public class BlogPromoterAgent implements StuckHandler {
     @Action
     BlogPost fetchBlogPost(UserInput userInput, OperationContext operationContext) {
 
-        AgentProcess agentProcess = AgentProcess.get();
-        if (agentProcess != null) {
-            Blackboard blackboard = agentProcess.getBlackboard();
-            blackboard.getObjects().forEach(o -> logger.info("Object on blackboard: {}", o.getClass().getSimpleName()));
-        } else {
-            logger.error("AgentProcess is null");
-        }
-
         logger.info("HELP: Action thread: {}", Thread.currentThread().getName());
         var transformer = new PIIToolLoopTransformer();
 
@@ -162,7 +154,8 @@ public class BlogPromoterAgent implements StuckHandler {
                 .withToolGroup("mcp-firecrawl")
                 .createObject(String.format("""
                         Fetch the content of the blog post from the URL that is provided by the user.
-                        If the user does not provide a URL or if the URL is not valid, return an error message with the problem.
+                        If the user does not provide a URL or if the URL is not valid, return an error 
+                        message with the problem.
                         Provide the content without any boilerplate or additional information.
                         Extract all the image urls from the page and return them in a list.
                         
