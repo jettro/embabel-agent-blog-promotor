@@ -20,6 +20,7 @@ import dev.jettro.blogpromotor.presidio.PresidioProperties;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.lang.NonNull;
@@ -27,6 +28,7 @@ import org.springframework.lang.NonNull;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 abstract class Personas {
     static final Persona EXTRACTOR = new Persona(
@@ -121,14 +123,15 @@ public class BlogPromoterAgent implements StuckHandler {
 
     private final int postWordCount;
     private final int reviewWordCount;
-    private final PresidioAnalyzerClient piiAnalyzerClient;
-    private final PresidioProperties presidioProperties;
+    private final Optional<PresidioAnalyzerClient> piiAnalyzerClient;
+    private final Optional<PresidioProperties> presidioProperties;
 
+    @Autowired
     BlogPromoterAgent(
             @Value("${postWordCount:200}") int postWordCount,
             @Value("${reviewWordCount:100}") int reviewWordCount,
-            PresidioAnalyzerClient piiAnalyzerClient,
-            PresidioProperties presidioProperties
+            Optional<PresidioAnalyzerClient> piiAnalyzerClient,
+            Optional<PresidioProperties> presidioProperties
     ) {
         this.postWordCount = postWordCount;
         this.reviewWordCount = reviewWordCount;
@@ -144,12 +147,17 @@ public class BlogPromoterAgent implements StuckHandler {
         logger.info("HELP: Action thread: {}", Thread.currentThread().getName());
         var transformer = new PIIToolLoopTransformer();
 
-        return operationContext.ai()
+        var agentAi = operationContext.ai()
                 .withLlm(
                         LlmOptions.fromCriteria(AutoModelSelectionCriteria.INSTANCE)
                                 .withTemperature(0.2) // Higher temperature for more creative output
-                ).withPromptContributor(Personas.EXTRACTOR)
-                .withGuardRails(new PIIUserInputGuardRail(piiAnalyzerClient, presidioProperties.piiTypes()))
+                ).withPromptContributor(Personas.EXTRACTOR);
+
+        if (piiAnalyzerClient.isPresent() && presidioProperties.isPresent()) {
+            agentAi = agentAi.withGuardRails(new PIIUserInputGuardRail(piiAnalyzerClient.get(), presidioProperties.get().piiTypes()));
+        }
+
+        return agentAi
                 .withToolLoopTransformers(transformer)
                 .withToolGroup("mcp-firecrawl")
                 .createObject(String.format("""

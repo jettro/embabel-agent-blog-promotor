@@ -44,14 +44,47 @@ mvn test
 mvn exec:java -Dexec.mainClass="dev.jettro.blogpromotor.App"
 ```
 
-In case you want to enable the PII Guardrail, you need to run the docker container first.
+## Enabling Optional Features
 
-```bash
-docker pull mcr.microsoft.com/presidio-analyzer
-docker run -d -p 5002:3000 mcr.microsoft.com/presidio-analyzer:latest
-```
+You can enable additional features such as Guardrails and Observability using Spring profiles.
+
+### Guardrails (PII Protection)
+
+The `guardrails` profile enables PII (Personally Identifiable Information) protection using Microsoft Presidio. When enabled, the agent will analyze user input for sensitive data and mask it before sending it to the LLM.
+
+To enable Guardrails:
+
+1.  **Start Microsoft Presidio Analyzer:**
+    ```bash
+    docker pull mcr.microsoft.com/presidio-analyzer
+    docker run -d -p 5002:3000 mcr.microsoft.com/presidio-analyzer:latest
+    ```
+2.  **Activate the profile:**
+    Add `guardrails` to `spring.profiles.active` in `src/main/resources/application.yml` or run with:
+    ```bash
+    mvn exec:java -Dexec.mainClass="dev.jettro.blogpromotor.App" -Dspring.profiles.active=guardrails
+    ```
 
 Find more information about the PII Guardrail [here](https://microsoft.github.io/presidio/getting_started/getting_started_text/).
+
+### Observability (Tracing)
+
+The `tracing` profile enables observability via OpenTelemetry and Langfuse. This allows you to track agent execution and LLM calls.
+
+To enable Observability:
+
+1.  **Configure Langfuse credentials:**
+    Set the following environment variables:
+    - `LANGFUSE_BASE_URL`
+    - `LANGFUSE_PUBLIC_KEY`
+    - `LANGFUSE_SECRET_KEY`
+2.  **Activate the profile:**
+    Add `tracing` to `spring.profiles.active` in `src/main/resources/application.yml` or run with:
+    ```bash
+    mvn exec:java -Dexec.mainClass="dev.jettro.blogpromotor.App" -Dspring.profiles.active=tracing
+    ```
+
+You can enable both features simultaneously by activating both profiles: `-Dspring.profiles.active=guardrails,tracing`.
 
 ## Agent Workflow
 
